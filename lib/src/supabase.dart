@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart';
 import 'package:supabase/supabase.dart';
@@ -60,17 +62,17 @@ class Supabase {
   /// interruption.
   ///
   /// If [debug] is set to `true`, debug logs will be printed in debug console.
-  static Future<Supabase> initialize({
-    required String url,
-    required String anonKey,
-    String? schema,
-    Map<String, String>? headers,
-    String? authCallbackUrlHostname,
-    LocalStorage? localStorage,
-    Client? httpClient,
-    int storageRetryAttempts = 0,
-    bool? debug,
-  }) async {
+  static Future<Supabase> initialize(
+      {required String url,
+      required String anonKey,
+      String? schema,
+      Map<String, String>? headers,
+      String? authCallbackUrlHostname,
+      LocalStorage? localStorage,
+      Client? httpClient,
+      int storageRetryAttempts = 0,
+      bool? debug,
+      Function(AuthState state)? initialAuthSubscription}) async {
     assert(
       !_instance._initialized,
       'This instance is already initialized',
@@ -86,6 +88,10 @@ class Supabase {
     _instance._debugEnable = debug ?? kDebugMode;
     _instance.log('***** Supabase init completed $_instance');
 
+    if (initialAuthSubscription != null) {
+      _instance._initialAuthSubscription = _instance.client.auth.onAuthStateChange.listen(initialAuthSubscription);
+    }
+
     await SupabaseAuth.initialize(
       localStorage: localStorage ?? const HiveLocalStorage(),
       authCallbackUrlHostname: authCallbackUrlHostname,
@@ -96,6 +102,7 @@ class Supabase {
 
   Supabase._();
   static final Supabase _instance = Supabase._();
+  StreamSubscription<AuthState>? _initialAuthSubscription;
 
   bool _initialized = false;
 
@@ -108,6 +115,7 @@ class Supabase {
   /// Dispose the instance to free up resources.
   void dispose() {
     client.dispose();
+    _initialAuthSubscription?.cancel();
     SupabaseAuth.instance.dispose();
     _initialized = false;
   }
@@ -120,10 +128,7 @@ class Supabase {
     String? schema,
     required int storageRetryAttempts,
   }) {
-    final headers = {
-      ...Constants.defaultHeaders,
-      if (customHeaders != null) ...customHeaders
-    };
+    final headers = {...Constants.defaultHeaders, if (customHeaders != null) ...customHeaders};
     client = SupabaseClient(
       supabaseUrl,
       supabaseAnonKey,
