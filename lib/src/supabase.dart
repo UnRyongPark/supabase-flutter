@@ -71,6 +71,7 @@ class Supabase {
       LocalStorage? localStorage,
       Client? httpClient,
       int storageRetryAttempts = 0,
+      RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
       bool? debug,
       Function(AuthState state)? initialAuthSubscription}) async {
     assert(
