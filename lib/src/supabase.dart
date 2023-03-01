@@ -84,6 +84,7 @@ class Supabase {
       customHeaders: headers,
       schema: schema,
       storageRetryAttempts: storageRetryAttempts,
+      realtimeClientOptions: realtimeClientOptions,
     );
     _instance._debugEnable = debug ?? kDebugMode;
     _instance.log('***** Supabase init completed $_instance');
@@ -127,6 +128,7 @@ class Supabase {
     Map<String, String>? customHeaders,
     String? schema,
     required int storageRetryAttempts,
+    required RealtimeClientOptions realtimeClientOptions,
   }) {
     final headers = {...Constants.defaultHeaders, if (customHeaders != null) ...customHeaders};
     client = SupabaseClient(
@@ -136,13 +138,17 @@ class Supabase {
       headers: headers,
       schema: schema,
       storageRetryAttempts: storageRetryAttempts,
+      realtimeClientOptions: realtimeClientOptions,
     );
     _initialized = true;
   }
 
-  void log(String msg) {
+  void log(String msg, [StackTrace? stackTrace]) {
     if (_debugEnable) {
       debugPrint(msg);
+      if (stackTrace != null) {
+        debugPrintStack(stackTrace: stackTrace);
+      }
     }
   }
 }
